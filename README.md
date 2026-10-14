@@ -1,6 +1,6 @@
 # AI Support Agent
 
-A self-hosted support chatbot you can attach to any webpage. Point it at your site or your docs folder, it indexes the content, and a one-line script tag adds a chat bubble that answers questions from that content, with links back to the source pages. Answers come from Claude.
+A self-hosted support chatbot you can attach to any webpage. Point it at your site or your docs folder, it indexes the content, and a one-line script tag adds a chat bubble that answers questions from that content, with links back to the source pages. Answers come from Claude by default, or from a local open-weights model via [Ollama](docs/deployment.md#running-fully-self-hosted) if nothing should leave your server.
 
 Built for developers dropping it into their own projects: no database, no build step, no vendor dashboard. One Node process, JSON files on disk, and a ~15 KB widget.
 
@@ -12,7 +12,7 @@ Built for developers dropping it into their own projects: no database, no build 
 
 ## Quick start
 
-Requires Node 22.18 or newer and an [Anthropic API key](https://platform.claude.com/).
+Requires Node 22.18 or newer and an [Anthropic API key](https://platform.claude.com/) (or a local [Ollama](docs/deployment.md#running-fully-self-hosted) install).
 
 ```bash
 npm install
@@ -78,7 +78,8 @@ Open http://localhost:3000/demo and ask the bubble something like "how do I embe
 src/
   cli.ts            command-line entry point
   server.ts         HTTP server: widget, chat (SSE), config, reindex
-  agent.ts          Claude tool loop, system prompt, sessions
+  agent.ts          sessions; hands each message to the configured backend
+  backends/         claude.ts (tool loop), ollama.ts (retrieve-then-answer), shared tools
   kb.ts             knowledge base build + BM25 search
   ingest/           crawler, local file reader, HTML extraction, chunker
 public/

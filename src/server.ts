@@ -2,6 +2,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { chat } from "./agent.ts";
+import { checkOllama } from "./backends/ollama.ts";
 import { ROOT, loadAgent, settings, type AgentConfig } from "./config.ts";
 import { buildKnowledgeBase, getKnowledgeBase } from "./kb.ts";
 
@@ -141,7 +142,10 @@ export function startServer(port = settings.port) {
     console.log(`Support agent server on http://localhost:${port}`);
     console.log(`  demo:   http://localhost:${port}/demo`);
     console.log(`  widget: http://localhost:${port}/widget.js`);
-    if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
+    if (settings.provider === "ollama") {
+      console.log(`  model:  ${settings.ollama.model} via Ollama at ${settings.ollama.url}`);
+      checkOllama().then((warning) => warning && console.warn(`\n  Warning: ${warning}`));
+    } else if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
       console.warn("\n  Warning: ANTHROPIC_API_KEY is not set, so chat requests will fail. Add it to .env.");
     }
   });
