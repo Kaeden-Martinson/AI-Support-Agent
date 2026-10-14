@@ -27,8 +27,10 @@ setInterval(() => {
 // --- helpers ---------------------------------------------------------------------------------
 function cors(req: http.IncomingMessage, res: http.ServerResponse, agent: AgentConfig | null): boolean {
   const origin = req.headers.origin;
-  if (!origin) return true; // same-origin or non-browser client
-  const allowed = agent?.allowedOrigins ?? [];
+  if (!origin) return true; // non-browser client
+  // Browsers send Origin on same-origin POSTs too, e.g. from this server's own /demo page.
+  if (origin === `http://${req.headers.host}` || origin === `https://${req.headers.host}`) return true;
+  const allowed = (agent?.allowedOrigins ?? []).map((o) => o.replace(/\/+$/, ""));
   if (!allowed.includes("*") && !allowed.includes(origin)) return false;
   res.setHeader("Access-Control-Allow-Origin", origin);
   res.setHeader("Vary", "Origin");

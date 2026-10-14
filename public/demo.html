@@ -36,8 +36,20 @@
     <pre><code>&lt;script src="http://localhost:3000/widget.js" data-agent="demo" defer&gt;&lt;/script&gt;</code></pre>
   </main>
 
-  <script src="/widget.js" data-agent="demo" defer></script>
   <script>
+    // /demo?agent=<id> tests any agent's widget against this server.
+    var agent = new URLSearchParams(location.search).get("agent") || "demo";
+    if (agent !== "demo") {
+      document.querySelector("h1").textContent = "Testing agent: " + agent;
+      document.querySelector(".lede").textContent = "The chat bubble in the corner answers from this agent's knowledge base. Check its answers against your site's pages.";
+      document.querySelectorAll("h2, .try, pre").forEach(function (el) { el.remove(); });
+    }
+    var s = document.createElement("script");
+    s.src = "/widget.js";
+    s.dataset.agent = agent;
+    s.dataset.open = "true";
+    document.body.appendChild(s);
+
     document.querySelectorAll(".try button").forEach(function (b) {
       b.addEventListener("click", function () { window.SupportAgent && SupportAgent.ask(b.textContent); });
     });

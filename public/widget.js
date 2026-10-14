@@ -34,21 +34,37 @@
     if (/^(https?:\/\/|\/|#|mailto:)/i.test(u)) return esc(u);
     return null;
   }
+  function anchor(href, text) {
+    return '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + text + "</a>";
+  }
   function inline(s) {
-    var codes = [];
-    s = s.replace(/`([^`]+)`/g, function (_, c) {
-      codes.push("<code>" + c + "</code>");
-      return "\u0000" + (codes.length - 1) + "\u0000";
-    });
+    // Finished HTML (code, links) is parked in placeholders so later passes can't touch it.
+    var held = [];
+    var hold = function (html) {
+      held.push(html);
+      return "\u0000" + (held.length - 1) + "\u0000";
+    };
     s = s
+      .replace(/`([^`]+)`/g, function (_, c) {
+        return hold("<code>" + c + "</code>");
+      })
       .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, text, url) {
         var href = safeHref(url);
-        return href ? '<a href="' + href + '" target="_blank" rel="noopener noreferrer">' + text + "</a>" : text;
+        return href ? hold(anchor(href, text)) : text;
+      })
+      // <https://...> autolinks (escaped by now) and bare URLs, minus trailing punctuation.
+      .replace(/&lt;(https?:\/\/[^\s]+?)&gt;/g, function (m, url) {
+        var href = safeHref(url);
+        return href ? hold(anchor(href, url)) : m;
+      })
+      .replace(/https?:\/\/[^\s<\u0000]+?(?=[.,;:!?)]*(?:\s|$|\u0000))/g, function (url) {
+        var href = safeHref(url);
+        return href ? hold(anchor(href, url)) : url;
       })
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
       .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
     return s.replace(/\u0000(\d+)\u0000/g, function (_, i) {
-      return codes[+i];
+      return held[+i];
     });
   }
   function markdown(src) {
