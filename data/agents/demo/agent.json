@@ -6,7 +6,7 @@
   "greeting": "Hi! I can help you set up and embed AI Support Agent in your project. What are you building?",
   "allowedOrigins": ["*"],
   "sources": [
-    { "type": "file", "path": "README.md" },
-    { "type": "dir", "path": "docs" }
+    { "type": "file", "path": "README.md", "baseUrl": "https://github.com/Kaeden-Martinson/AI-Support-Agent/blob/main/" },
+    { "type": "dir", "path": "docs", "baseUrl": "https://github.com/Kaeden-Martinson/AI-Support-Agent/blob/main/docs/" }
   ]
 }

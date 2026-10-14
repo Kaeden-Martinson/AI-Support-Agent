@@ -19,6 +19,7 @@ An agent's sources live in `data/agents/<id>/agent.json`. Three kinds:
 - **url**: crawls the site breadth-first, same origin only. It seeds from `/sitemap.xml` when present, honors `robots.txt` Disallow rules, skips assets, and drops duplicate pages. `pathPrefix` limits the crawl to one section of the site. `maxPages` defaults to 200.
 - **dir**: reads `.md`, `.mdx`, `.markdown`, `.txt`, `.rst`, `.html` files recursively, skipping `node_modules`, `.git`, `dist` and `build`. Paths are relative to where you run the command.
 - **file**: a single file.
+- **baseUrl** (optional, on `dir` and `file`): the web address where those files are published, such as `https://github.com/me/my-project/blob/main/docs/`. Without it, answers can only name local paths like `docs/install.md`, which visitors can't open. With it, each page's link becomes `baseUrl` plus its path inside the folder, so answers link to the real page and the widget shows it as a source.
 
 For your own projects, pointing `dir` at the repo's `docs/` folder plus `README.md` usually gives better answers than crawling the deployed site, because Markdown keeps its structure.
 

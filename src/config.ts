@@ -37,8 +37,8 @@ export const settings = {
 
 export type Source =
   | { type: "url"; url: string; maxPages?: number; pathPrefix?: string }
-  | { type: "dir"; path: string }
-  | { type: "file"; path: string };
+  | { type: "dir"; path: string; baseUrl?: string }
+  | { type: "file"; path: string; baseUrl?: string };
 
 export interface AgentConfig {
   id: string;

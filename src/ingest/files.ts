@@ -7,14 +7,23 @@ const TEXT_EXT = new Set([".md", ".mdx", ".markdown", ".txt", ".rst", ".html", "
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", "data", "coverage"]);
 
 /** Read docs from a local directory (recursively) or a single file. Paths are relative to cwd. */
-export function readLocal(target: string): RawPage[] {
+export function readLocal(target: string, baseUrl?: string): RawPage[] {
   const abs = path.resolve(target);
   if (!fs.existsSync(abs)) throw new Error(`Not found: ${target}`);
-  const files = fs.statSync(abs).isDirectory() ? walk(abs) : [abs];
+  const isDir = fs.statSync(abs).isDirectory();
+  const files = isDir ? walk(abs) : [abs];
+  // A dir source links paths inside the dir; a file source links its own file name.
+  const root = isDir ? abs : path.dirname(abs);
   return files.flatMap((file) => {
-    const page = readFile(file);
+    const page = readFile(file, baseUrl ? linkFor(baseUrl, root, file) : undefined);
     return page && page.text.length >= 40 ? [page] : [];
   });
+}
+
+/** Web address for a local file, e.g. ".../blob/main/docs/" + "guides/install.md". */
+export function linkFor(baseUrl: string, root: string, file: string): string {
+  const rel = path.relative(root, file).split(path.sep).map(encodeURIComponent).join("/");
+  return baseUrl.replace(/\/*$/, "/") + rel;
 }
 
 function walk(dir: string): string[] {
@@ -28,13 +37,13 @@ function walk(dir: string): string[] {
   return out;
 }
 
-function readFile(file: string): RawPage | null {
+function readFile(file: string, url?: string): RawPage | null {
   const raw = fs.readFileSync(file, "utf8");
   const rel = path.relative(process.cwd(), file).split(path.sep).join("/");
   const ext = path.extname(file).toLowerCase();
   if (ext === ".html" || ext === ".htm") {
     const page = extractHtml(raw);
-    return { url: rel, title: page.title || rel, text: page.text };
+    return { url: url ?? rel, title: page.title || rel, text: page.text };
   }
   // Strip YAML front matter, but use its title if present.
   let text = raw.replace(/\r\n/g, "\n");
@@ -45,5 +54,5 @@ function readFile(file: string): RawPage | null {
     text = text.slice(fm[0].length);
   }
   title ||= /^#\s+(.+)$/m.exec(text)?.[1]?.trim() ?? path.basename(file);
-  return { url: rel, title, text: tidy(text) };
+  return { url: url ?? rel, title, text: tidy(text) };
 }

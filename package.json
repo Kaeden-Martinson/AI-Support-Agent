@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "node --env-file-if-exists=.env src/cli.ts serve",
     "cli": "node --env-file-if-exists=.env src/cli.ts",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "node --test \"test/*.test.ts\""
   },
   "type": "module",
   "dependencies": {

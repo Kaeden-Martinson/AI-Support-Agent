@@ -26,7 +26,7 @@ export async function buildKnowledgeBase(cfg: AgentConfig, log: (msg: string) =>
       pages.push(...(await crawlSite(src.url, { maxPages: src.maxPages, pathPrefix: src.pathPrefix, onPage: (u, n) => log(`  [${n}] ${u}`) })));
     } else {
       log(`Reading ${src.path}`);
-      const found = readLocal(src.path);
+      const found = readLocal(src.path, src.baseUrl);
       found.forEach((p) => log(`  ${p.url}`));
       pages.push(...found);
     }
