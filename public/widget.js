@@ -98,6 +98,22 @@
     return out.join("");
   }
 
+  // Links an answer used, shown as "Sources" chips: absolute http(s) only, deduped, first four.
+  function collectSources(md) {
+    var out = [];
+    var seen = {};
+    var text = md.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
+    var re = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|<(https?:\/\/[^>\s]+)>|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?])/g;
+    var m;
+    while ((m = re.exec(text)) && out.length < 4) {
+      var href = m[2] || m[3] || m[4];
+      if (seen[href]) continue;
+      seen[href] = true;
+      out.push({ href: href, text: m[1] || href.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "") });
+    }
+    return out;
+  }
+
   var CSS =
     ":host{all:initial}" +
     "*{box-sizing:border-box}" +
@@ -381,6 +397,8 @@
     /** Open the chat and send a question, e.g. from a "Ask AI about this" button. */
     ask: function (text) { instance && instance.send(text); },
     reset: function () { instance && instance.reset(); },
+    /** For tests only; not a stable API. */
+    _internals: { markdown: markdown, collectSources: collectSources },
   };
   window.SupportAgent = api;
 
