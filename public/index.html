@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>support-agent · self-hosted support chat</title>
+  <meta name="description" content="A self-hosted support chat for your project, trained on your own docs. One script tag, answers with links to your pages, Claude or a local model.">
+  <style>
+    :root { --paper:#f8f7f3; --ink:#18181b; --muted:#66666b; --line:#e3e1da; --acc:#1f6f50; --chip:#eceae4; --code:#1b1b1f; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--paper); color:var(--ink); font:13px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+    a { color:var(--acc); text-decoration:none; font-weight:600; }
+    a:hover { text-decoration:underline; }
+    a:focus-visible, button:focus-visible { outline:2px solid var(--acc); outline-offset:2px; }
+    code, pre, .mono { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    .wrap { max-width:960px; margin:0 auto; padding:0 28px; }
+
+    nav { border-bottom:1px solid var(--line); }
+    nav .wrap { display:flex; align-items:center; gap:22px; height:52px; }
+    nav .mark { font:600 13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--ink); margin-right:auto; }
+    nav a:not(.mark) { color:var(--muted); font-weight:400; }
+
+    h1 { font-size:41px; line-height:1.08; letter-spacing:-.02em; font-weight:650; margin:0 0 16px; max-width:16ch; }
+    h2 { font-size:23px; line-height:1.2; letter-spacing:-.01em; font-weight:650; margin:0 0 8px; }
+    h3 { font-size:13px; font-weight:650; margin:0 0 4px; }
+    .lede { font-size:17.3px; color:var(--muted); max-width:44ch; margin:0 0 22px; }
+    .label { font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:0 0 10px; }
+    section { border-top:1px solid var(--line); padding:48px 0; }
+
+    .hero { display:grid; grid-template-columns:1.1fr .9fr; gap:40px; padding-top:56px; padding-bottom:52px; align-items:start; }
+    .term { position:relative; background:var(--code); color:#d8d8d8; font-size:12px; line-height:1.75; border-radius:6px; padding:14px 16px; margin:0; overflow-x:auto; white-space:pre; }
+    .term .p { color:#77777d; user-select:none; }
+    .copy { position:absolute; right:10px; top:10px; font:11px system-ui,sans-serif; color:#a1a1a6; background:transparent; border:1px solid #3a3a40; border-radius:4px; padding:1px 7px; cursor:pointer; }
+    .cta { margin-top:20px; display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+    .btn { background:var(--ink); color:#fff; padding:9px 16px; border-radius:4px; }
+    .btn:hover { text-decoration:none; background:#2b2b30; }
+
+    .example { background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; font-size:12.5px; }
+    .example .hd { display:flex; justify-content:space-between; padding:11px 14px; border-bottom:1px solid var(--line); font-weight:600; }
+    .example .hd span { color:var(--muted); font-weight:400; font-size:12px; }
+    .example .b { padding:14px; display:flex; flex-direction:column; gap:10px; }
+    .example .u { align-self:flex-end; background:var(--acc); color:#fff; padding:7px 11px; border-radius:12px 12px 3px 12px; }
+    .example .st { color:var(--muted); font-size:11.5px; display:flex; align-items:center; gap:6px; }
+    .example .st::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--acc); }
+    .example p { margin:0; }
+    .example code { font-size:12px; background:var(--chip); padding:1px 4px; border-radius:3px; }
+    .example pre { background:var(--code); color:#d8d8d8; font-size:11.5px; line-height:1.6; border-radius:6px; padding:10px 12px; margin:6px 0; }
+    .example .src { border-top:1px dashed var(--line); padding-top:9px; display:flex; flex-wrap:wrap; gap:5px; }
+    .example .src span { width:100%; font-size:11px; color:var(--muted); }
+    .example .chip { font-size:11.5px; border:1px solid var(--line); border-radius:4px; padding:1px 7px; }
+    .example .ft { border-top:1px solid var(--line); padding:10px 14px; }
+    .example .in { border:1px solid var(--line); border-radius:9px; padding:8px 10px; color:var(--muted); }
+    .caption { font-size:11.5px; color:var(--muted); margin:8px 0 0; }
+
+    .flow { display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); border-radius:8px; background:#fff; margin-top:22px; }
+    .flow div { padding:14px 16px; border-right:1px solid var(--line); }
+    .flow div:last-child { border-right:0; }
+    .flow small { font:11px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--acc); display:block; margin-bottom:6px; }
+    .flow p { margin:0; color:var(--muted); font-size:12px; }
+
+    .split { display:grid; grid-template-columns:.8fr 1.2fr; gap:40px; }
+    .split > div > p { color:var(--muted); margin:0; }
+    table { width:100%; border-collapse:collapse; font-size:12px; margin-top:14px; }
+    td { border-top:1px solid var(--line); padding:7px 0; vertical-align:top; }
+    td:first-child { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; width:42%; }
+    td:last-child { color:var(--muted); }
+    [role="tablist"] { display:flex; gap:2px; border-bottom:1px solid var(--line); }
+    [role="tab"] { font:inherit; font-size:12px; color:var(--muted); background:none; border:0; padding:8px 12px; cursor:pointer; }
+    [role="tab"][aria-selected="true"] { color:var(--ink); font-weight:600; box-shadow:inset 0 -2px 0 var(--acc); }
+    [role="tabpanel"] .term { border-radius:0 0 6px 6px; }
+
+    .models { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); border-radius:8px; background:#fff; margin-top:22px; }
+    .models > div { padding:18px 20px; }
+    .models > div + div { border-left:1px solid var(--line); }
+    .models ul { margin:8px 0 0; padding-left:16px; color:var(--muted); font-size:12.5px; }
+    .models li { margin-bottom:4px; }
+    .models code { font-size:11.5px; background:var(--chip); padding:1px 4px; border-radius:3px; }
+
+    footer { border-top:1px solid var(--line); padding:22px 0; color:var(--muted); font-size:12px; }
+    footer .wrap { display:flex; gap:20px; flex-wrap:wrap; }
+    footer span { margin-right:auto; }
+
+    @media (max-width:760px) {
+      .hero, .split, .models { grid-template-columns:1fr; }
+      .models > div + div { border-left:0; border-top:1px solid var(--line); }
+      .flow { grid-template-columns:1fr 1fr; }
+      .flow div:nth-child(2) { border-right:0; }
+      .flow div:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+    }
+    @media (max-width:480px) {
+      .wrap { padding:0 16px; }
+      h1 { font-size:30.7px; }
+      .flow { grid-template-columns:1fr; }
+      .flow div { border-right:0; border-bottom:1px solid var(--line); }
+      .flow div:last-child { border-bottom:0; }
+      nav .wrap { gap:14px; }
+    }
+  </style>
+</head>
+<body>
+  <nav><div class="wrap">
+    <a class="mark" href="/">support-agent</a>
+    <a href="https://github.com/Kaeden-Martinson/AI-Support-Agent#readme">Docs</a>
+    <a href="https://github.com/Kaeden-Martinson/AI-Support-Agent/blob/main/docs/deployment.md">Self-hosting</a>
+    <a href="https://github.com/Kaeden-Martinson/AI-Support-Agent">GitHub</a>
+  </div></nav>
+
+  <main>
+    <div class="wrap hero">
+      <div>
+        <h1>A support chat for your project, trained on your own docs.</h1>
+        <p class="lede">Point it at a website or a docs folder, add one script tag, and it answers visitors from your pages, linking the one it used.</p>
+        <pre class="term"><button class="copy" type="button" data-copy="git clone https://github.com/Kaeden-Martinson/AI-Support-Agent&#10;npm run cli -- init my-app --name &quot;My App&quot; --dir ./docs&#10;npm run cli -- ingest my-app&#10;npm run serve">Copy</button><span class="p">$ </span>git clone https://github.com/Kaeden-Martinson/AI-Support-Agent
+<span class="p">$ </span>npm run cli -- init my-app --name "My App" --dir ./docs
+<span class="p">$ </span>npm run cli -- ingest my-app
+<span class="p">$ </span>npm run serve</pre>
+        <div class="cta">
+          <a class="btn" href="https://github.com/Kaeden-Martinson/AI-Support-Agent">View on GitHub</a>
+          <a href="https://github.com/Kaeden-Martinson/AI-Support-Agent#quick-start">Quick start →</a>
+        </div>
+      </div>
+      <div>
+        <div class="example" aria-label="Example conversation">
+          <div class="hd">support-agent docs<span>New chat</span></div>
+          <div class="b">
+            <div class="u">Can I run it without an API key?</div>
+            <div class="st">Searched docs: local model, ollama</div>
+            <div>
+              <p>Yes. Install Ollama, pull a model, and set the provider:</p>
+              <pre>LLM_PROVIDER=ollama
+OLLAMA_MODEL=llama3.1:8b</pre>
+              <p>Nothing leaves your machine; answers are a little less sharp than Claude's.</p>
+            </div>
+            <div class="src"><span>Sources</span>
+              <a class="chip" href="https://github.com/Kaeden-Martinson/AI-Support-Agent/blob/main/docs/deployment.md#running-fully-self-hosted">Running fully self-hosted</a>
+              <a class="chip" href="https://github.com/Kaeden-Martinson/AI-Support-Agent/blob/main/docs/configuration.md">Configuration</a>
+            </div>
+          </div>
+          <div class="ft"><div class="in">Ask a follow-up…</div></div>
+        </div>
+        <p class="caption">Try the real one: it's in the corner, answering from this project's docs.</p>
+      </div>
+    </div>
+
+    <section><div class="wrap">
+      <p class="label">How it answers</p>
+      <h2>Your pages in, cited answers out.</h2>
+      <div class="flow">
+        <div><small>1 · ingest</small><h3>Crawl or read</h3><p>Your site, a docs folder, or a README. Respects robots.txt.</p></div>
+        <div><small>2 · index</small><h3>Split by heading</h3><p>Passages kept whole, code blocks never cut. One JSON file.</p></div>
+        <div><small>3 · search</small><h3>Find the passage</h3><p>Keyword search over your passages. Claude retries with other wording when it misses.</p></div>
+        <div><small>4 · answer</small><h3>Reply with a link</h3><p>Streams the answer and links the page it came from.</p></div>
+      </div>
+    </div></section>
+
+    <section><div class="wrap split">
+      <div>
+        <p class="label">Embed</p>
+        <h2>One script tag on any site.</h2>
+        <p>It renders in its own Shadow DOM, so your CSS can't break it. Works in plain HTML, Next.js, React, Vue, anything that can add a script.</p>
+        <table>
+          <tr><td>data-agent</td><td>Which agent answers</td></tr>
+          <tr><td>data-color</td><td>Your accent color</td></tr>
+          <tr><td>data-position</td><td>left or right corner</td></tr>
+          <tr><td>SupportAgent.ask()</td><td>Open it from your own button</td></tr>
+        </table>
+      </div>
+      <div>
+        <div role="tablist" aria-label="Embed code">
+          <button role="tab" id="tab-html" aria-controls="panel-html" aria-selected="true">HTML</button>
+          <button role="tab" id="tab-next" aria-controls="panel-next" aria-selected="false" tabindex="-1">Next.js</button>
+          <button role="tab" id="tab-react" aria-controls="panel-react" aria-selected="false" tabindex="-1">React</button>
+        </div>
+        <div role="tabpanel" id="panel-html" aria-labelledby="tab-html"><pre class="term"><button class="copy" type="button">Copy</button><code>&lt;script src="https://support.example.com/widget.js"
+  data-agent="my-app"
+  data-color="#1f6f50" defer&gt;&lt;/script&gt;</code></pre></div>
+        <div role="tabpanel" id="panel-next" aria-labelledby="tab-next" hidden><pre class="term"><button class="copy" type="button">Copy</button><code>import Script from "next/script";
+
+export default function RootLayout({ children }) {
+  return (
+    &lt;html lang="en"&gt;
+      &lt;body&gt;
+        {children}
+        &lt;Script src="https://support.example.com/widget.js"
+          data-agent="my-app" strategy="afterInteractive" /&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;
+  );
+}</code></pre></div>
+        <div role="tabpanel" id="panel-react" aria-labelledby="tab-react" hidden><pre class="term"><button class="copy" type="button">Copy</button><code>import { useEffect } from "react";
+
+export function SupportWidget() {
+  useEffect(() =&gt; {
+    const s = document.createElement("script");
+    s.src = "https://support.example.com/widget.js";
+    s.dataset.agent = "my-app";
+    s.defer = true;
+    document.body.appendChild(s);
+  }, []);
+  return null;
+}</code></pre></div>
+      </div>
+    </div></section>
+
+    <section><div class="wrap">
+      <p class="label">Models</p>
+      <h2>Claude by default. Your own GPU when nothing may leave the box.</h2>
+      <div class="models">
+        <div><h3>Claude</h3><ul><li>Searches several times and reasons across pages</li><li>Best at saying "I couldn't find that" instead of guessing</li><li>Paid per message; set a rate limit</li></ul></div>
+        <div><h3>Ollama, local</h3><ul><li><code>llama3.1:8b</code> fits an 8 GB GPU</li><li>No API key, no data leaves your server</li><li>Fine for direct "how do I" questions; weaker across many pages</li></ul></div>
+      </div>
+    </div></section>
+  </main>
+
+  <footer><div class="wrap">
+    <span>support-agent · self-hosted, no database</span>
+    <a href="https://github.com/Kaeden-Martinson/AI-Support-Agent">GitHub</a>
+    <a href="https://github.com/Kaeden-Martinson/AI-Support-Agent#readme">Docs</a>
+  </div></footer>
+
+  <script>
+    // Copy buttons: hero commands come from data-copy (no "$ " prompts); code tabs copy their code.
+    document.addEventListener("click", function (e) {
+      var btn = e.target.closest && e.target.closest(".copy");
+      if (!btn || !navigator.clipboard) return;
+      var text = btn.dataset.copy || btn.parentElement.querySelector("code").textContent;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = "Copied";
+        setTimeout(function () { btn.textContent = "Copy"; }, 1200);
+      });
+    });
+
+    // Code tabs: click or arrow keys.
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+    function select(tab) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.setAttribute("aria-selected", String(on));
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+      });
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener("click", function () { select(t); });
+      t.addEventListener("keydown", function (e) {
+        var d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!d) return;
+        var next = tabs[(i + d + tabs.length) % tabs.length];
+        select(next);
+        next.focus();
+      });
+    });
+  </script>
+  <script src="/widget.js" data-agent="demo" data-hint="Questions about setup? Ask here." defer></script>
+</body>
+</html>

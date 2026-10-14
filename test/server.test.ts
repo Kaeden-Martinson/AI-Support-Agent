@@ -21,3 +21,15 @@ test("config returns the demo agent's starter questions", async () => {
   assert.equal(body.name, "AI Support Agent");
   assert.equal(body.suggestions.length, 3);
 });
+
+test("/ serves the home page", async () => {
+  const res = await fetch(`${await base()}/`);
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get("content-type") ?? "", /text\/html/);
+  assert.match(await res.text(), /trained on your own docs/);
+});
+
+test("/demo still serves the test page", async () => {
+  const res = await fetch(`${await base()}/demo`);
+  assert.match(await res.text(), /<title>Support Agent Demo<\/title>/);
+});

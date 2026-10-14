@@ -84,6 +84,7 @@ src/
   ingest/           crawler, local file reader, HTML extraction, chunker
 public/
   widget.js         the embeddable chat widget (no dependencies)
-  demo.html         demo page
+  index.html        home page served at /
+  demo.html         widget test page at /demo?agent=<id>
 data/agents/<id>/   agent.json (config) and kb.json (generated index)
 ```

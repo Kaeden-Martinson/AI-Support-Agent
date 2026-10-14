@@ -84,7 +84,8 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
   const p = url.pathname;
 
   if (req.method === "GET" && p === "/widget.js") return serveStatic(res, "widget.js", "text/javascript; charset=utf-8");
-  if (req.method === "GET" && (p === "/" || p === "/demo")) return serveStatic(res, "demo.html", "text/html; charset=utf-8");
+  if (req.method === "GET" && p === "/") return serveStatic(res, "index.html", "text/html; charset=utf-8");
+  if (req.method === "GET" && p === "/demo") return serveStatic(res, "demo.html", "text/html; charset=utf-8");
   if (req.method === "GET" && p === "/api/health") return json(res, 200, { ok: true });
 
   const m = /^\/api\/agents\/([a-z0-9-]+)\/(config|chat|reindex)$/.exec(p);
