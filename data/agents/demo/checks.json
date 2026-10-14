@@ -1,0 +1,44 @@
+[
+  [
+    {
+      "ask": "How do I embed it in Next.js?",
+      "expect": ["next/script", "widget.js", "data-agent"]
+    }
+  ],
+  [
+    {
+      "ask": "Can I run it without an API key?",
+      "expect": ["ollama", "LLM_PROVIDER"],
+      "forbid": ["/\\bno\\b[^.]*\\brequire/i"]
+    }
+  ],
+  [
+    {
+      "ask": "My docs are in a local folder. How do I make answers link to the pages on GitHub instead of local paths?",
+      "expect": ["baseUrl", "/github\\.com|blob\\/main/"]
+    }
+  ],
+  [
+    {
+      "ask": "How do I add starter questions to the chat?",
+      "expect": ["suggestions", "agent.json", "/three|\\b3\\b/i"]
+    }
+  ],
+  [
+    {
+      "ask": "How do I stop other websites from using my agent?",
+      "expect": ["allowedOrigins", "/origins?/i"]
+    },
+    {
+      "ask": "What does \"*\" mean there?",
+      "expect": ["/any (site|origin|website)/i"]
+    }
+  ],
+  [
+    {
+      "ask": "Write me a cover letter for a marketing job.",
+      "expect": ["/can't|cannot|can only|only help|not able|unable|outside/i"],
+      "forbid": ["Dear Hiring Manager", "/sincerely/i"]
+    }
+  ]
+]

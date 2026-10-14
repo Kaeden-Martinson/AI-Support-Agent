@@ -61,6 +61,7 @@ Open http://localhost:3000/demo and ask the bubble something like "how do I embe
 | `npm run cli -- init <id> --name ... --url/--dir/--file ...` | Create an agent |
 | `npm run cli -- ingest <id>` | Crawl/read sources and rebuild the index |
 | `npm run cli -- ask <id> [question]` | Chat in the terminal (interactive without a question) |
+| `npm run cli -- check <id>` | Ask the questions in `checks.json` and test the answers ([how](docs/knowledge-base.md#checking-answers)) |
 | `npm run cli -- search <id> <query>` | Show raw retrieval results |
 | `npm run cli -- list` | List agents and index status |
 | `npm run serve` | Start the server |
