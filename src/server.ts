@@ -3,8 +3,9 @@ import http from "node:http";
 import path from "node:path";
 import { chat } from "./agent.ts";
 import { checkOllama } from "./backends/ollama.ts";
-import { ROOT, loadAgent, settings, starterQuestions, type AgentConfig } from "./config.ts";
+import { ROOT, agentDir, listAgents, loadAgent, settings, starterQuestions, type AgentConfig } from "./config.ts";
 import { buildKnowledgeBase, getKnowledgeBase } from "./kb.ts";
+import { logFile, pruneLog } from "./questionlog.ts";
 
 const MAX_BODY = 16 * 1024;
 const MAX_MESSAGE = 4000;
@@ -138,7 +139,20 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
   return json(res, 405, { error: "Method not allowed" });
 }
 
+/** Apply LOG_RETENTION_DAYS to every agent's question log. */
+function pruneQuestionLogs() {
+  for (const id of listAgents()) {
+    try {
+      const removed = pruneLog(logFile(agentDir(id)), settings.logRetentionDays);
+      if (removed) console.log(`[question log ${id}] removed ${removed} entries older than ${settings.logRetentionDays} days`);
+    } catch (err) {
+      console.error(`[question log ${id}]`, err);
+    }
+  }
+}
+
 export function startServer(port = settings.port) {
+  pruneQuestionLogs();
   const server = http.createServer((req, res) => {
     handle(req, res).catch((err) => {
       if (!err.status) console.error(err);

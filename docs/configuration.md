@@ -46,6 +46,40 @@ One server can host many agents, one per project. Each agent has its own folder 
 | `OLLAMA_TOOLS` | `0` | Set to `1` to also let the model run its own `search_docs`/`read_page` calls. Needs a model with tool calling; small models often do worse with it on |
 | `RATE_LIMIT_PER_MIN` | `20` | Chat messages per visitor IP per minute, per agent |
 | `TRUST_PROXY` | | Set to `1` behind a reverse proxy so rate limits use `X-Forwarded-For` |
+| `LOG_QUESTIONS` | `0` | Set to `1` to keep a log of visitor questions; see [Question log](#question-log) |
+| `LOG_RETENTION_DAYS` | `30` | Question-log entries older than this are deleted each time the server starts |
+
+## Question log
+
+With `LOG_QUESTIONS=1`, the server appends one JSON line per answered message to `data/agents/<id>/log.jsonl`, so you can see what visitors ask and which questions your docs don't cover. It is off by default, and the file is in `.gitignore`.
+
+Each line stores:
+
+| Field | What it is |
+| --- | --- |
+| `ts` | When the question arrived |
+| `session` | A short one-way hash of the chat session id. It groups messages from one conversation but can't be used to resume or identify it |
+| `question` | The visitor's message, exactly as typed |
+| `page` | The path of the page the widget was on (for example `/docs/install`), when the widget sent one |
+| `backend` | Which model answered: `claude` or `ollama` |
+| `answerChars` | Length of the answer in characters |
+| `sources` | The links the answer gave (what the widget shows as Sources) |
+| `searches` | The doc searches the agent ran while answering |
+| `notFound` | `true` when the answer said it couldn't find the information |
+| `ms` | Time from receiving the question to finishing the answer |
+| `error` | The error message shown to the visitor, when the answer failed or the visitor left mid-answer |
+
+What is **not** stored: IP addresses, the answer text, the page's host, query string or fragment, the page title, and the real session id. Messages rejected before reaching the model (rate-limited, too long, or sent while the previous one was still running) aren't logged.
+
+Visitors can type anything, including names or email addresses, and the `question` field keeps it verbatim. If you turn the log on, mention it in your privacy policy, keep `LOG_RETENTION_DAYS` as short as is useful, and treat the file as personal data. Old entries are pruned when the server starts, so a server that runs for months without restarting keeps them until the next restart; delete the file at any time to clear it.
+
+To summarize the log:
+
+```bash
+npm run cli -- report my-project --days 7
+```
+
+The report shows the most-asked questions (grouped ignoring case and punctuation), likely docs gaps (questions answered without linking any source, or where the answer said it couldn't find the information), errors, and the median and 95th-percentile response time. `--days` defaults to 7.
 
 ## HTTP API
 
