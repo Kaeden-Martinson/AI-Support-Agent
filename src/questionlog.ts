@@ -75,7 +75,12 @@ export class TurnRecorder {
   private readonly base: { sessionId: string; question: string; page?: string; backend: string };
 
   constructor(base: { sessionId: string; question: string; page?: string; backend: string }) {
-    this.base = base;
+    this.base = { ...base };
+  }
+
+  /** Record which model actually answered, when a fallback switched away from the configured one. */
+  answeredBy(backend: string): void {
+    this.base.backend = backend;
   }
 
   see(ev: AgentEvent): void {

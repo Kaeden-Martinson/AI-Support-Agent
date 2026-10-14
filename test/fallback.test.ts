@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import Anthropic from "@anthropic-ai/sdk";
 import type { AgentEvent } from "../src/agent.ts";
 import { claudeBackend } from "../src/backends/claude.ts";
-import { withFallback } from "../src/backends/fallback.ts";
+import { answeredByBackup, withFallback } from "../src/backends/fallback.ts";
 import { ollamaBackend } from "../src/backends/ollama.ts";
 import type { Backend, TurnInput } from "../src/backends/shared.ts";
 import type { AgentConfig } from "../src/config.ts";
@@ -81,6 +81,23 @@ test("Ollama answers when Claude fails before any text", async () => {
   assert.equal(logs.length, 1);
   assert.match(logs[0], /Claude unavailable \(529 .*\); answering with Ollama/);
   assert.equal(history.length, 1);
+});
+
+test("answeredByBackup tells the question log which model answered", async () => {
+  stubOllama("Within 30 days.");
+  const down = fakeClaude(async function* () {
+    throw overloaded();
+  });
+  const failover = await run(withFallback(down, ollamaBackend, { primary: "Claude", backup: "Ollama" }, quiet), "Refunds?", []);
+  assert.equal(answeredByBackup(failover.history), true);
+
+  const up = fakeClaude(async function* () {
+    yield { type: "text", text: "Within 30 days." };
+    return [];
+  });
+  const normal = await run(withFallback(up, ollamaBackend, { primary: "Claude", backup: "Ollama" }, quiet), "Refunds?", failover.history);
+  assert.equal(answeredByBackup(normal.history), false);
+  assert.equal(answeredByBackup([]), false);
 });
 
 test("each kind of outage fails over", async () => {

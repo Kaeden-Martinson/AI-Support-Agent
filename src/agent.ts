@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { claudeBackend } from "./backends/claude.ts";
-import { withFallback } from "./backends/fallback.ts";
+import { answeredByBackup, withFallback } from "./backends/fallback.ts";
 import { ollamaBackend } from "./backends/ollama.ts";
 import { clean, type Backend } from "./backends/shared.ts";
 import { agentDir, settings, type AgentConfig } from "./config.ts";
@@ -92,6 +92,8 @@ export async function* chat(
     // Backends work on a copy and we commit only a completed exchange, so a failed request
     // leaves the session history clean (no dangling user turn or unanswered tool call).
     session.history = yield* recorded(backend.answer({ cfg, kb, message, context, history: session.history }), recorder);
+    // With a fallback configured, log the model that actually answered rather than the configured one.
+    if (settings.provider === "claude" && settings.fallback === "ollama" && answeredByBackup(session.history)) recorder?.answeredBy("ollama");
     recorder?.see({ type: "done" });
     yield { type: "done" };
   } catch (err) {

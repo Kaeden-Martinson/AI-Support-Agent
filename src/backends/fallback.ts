@@ -90,6 +90,13 @@ export function withFallback(
   return { answer, errorMessage, textTurns };
 }
 
+/** Whether the latest finished exchange in a fallback backend's history was answered by the backup. */
+export function answeredByBackup(history: unknown[]): boolean {
+  const state = history[0] as FallbackState | undefined;
+  if (!state?.turns?.length) return false;
+  return state.backup.seen === state.turns.length && state.primary.seen !== state.turns.length;
+}
+
 function describe(err: unknown): string {
   if (err && typeof err === "object") {
     const { status, message } = err as { status?: unknown; message?: unknown };
