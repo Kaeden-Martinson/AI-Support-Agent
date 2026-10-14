@@ -54,3 +54,13 @@ npm run cli -- search my-project "rate limit"
 ```
 
 If the right passage isn't in the top results, the content probably uses different words than the question. Adding a FAQ page with the phrasing people actually use is the most effective fix.
+
+## Finding missing docs
+
+Turn on the question log (`LOG_QUESTIONS=1`, see [configuration.md](configuration.md#question-log)) and run the report every week or so:
+
+```bash
+npm run cli -- report my-project --days 7
+```
+
+Its "Likely docs gaps" section lists questions the agent answered without linking any page, or where it said it couldn't find the answer. Those are the topics to write up next, using the wording visitors actually used. After you add the page, re-run `ingest` and check the question with `npm run cli -- ask my-project "..."`.

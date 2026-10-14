@@ -3,8 +3,9 @@ import { claudeBackend } from "./backends/claude.ts";
 import { withFallback } from "./backends/fallback.ts";
 import { ollamaBackend } from "./backends/ollama.ts";
 import { clean, type Backend } from "./backends/shared.ts";
-import { settings, type AgentConfig } from "./config.ts";
+import { agentDir, settings, type AgentConfig } from "./config.ts";
 import type { KnowledgeBase } from "./kb.ts";
+import { appendEntry, logFile, pagePath, TurnRecorder } from "./questionlog.ts";
 
 const MAX_TURNS_PER_SESSION = 40;
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -82,19 +83,52 @@ export async function* chat(
   session.touched = Date.now();
   session.turns++;
   const pageUrl = clean(opts.page?.url, 500);
+  const recorder = settings.logQuestions
+    ? new TurnRecorder({ sessionId: id, question: message, page: pagePath(pageUrl), backend: settings.provider })
+    : null;
   const context = pageUrl ? `<page_context>Visitor is on: ${pageUrl}${opts.page?.title ? ` (${clean(opts.page.title, 200)})` : ""}</page_context>\n\n` : "";
 
   try {
     // Backends work on a copy and we commit only a completed exchange, so a failed request
     // leaves the session history clean (no dangling user turn or unanswered tool call).
-    session.history = yield* backend.answer({ cfg, kb, message, context, history: session.history });
+    session.history = yield* recorded(backend.answer({ cfg, kb, message, context, history: session.history }), recorder);
+    recorder?.see({ type: "done" });
     yield { type: "done" };
   } catch (err) {
     session.turns--;
     console.error("[chat]", err);
-    yield { type: "error", message: backend.errorMessage(err) };
+    const error: AgentEvent = { type: "error", message: backend.errorMessage(err) };
+    recorder?.see(error);
+    yield error;
   } finally {
     session.busy = false;
     session.touched = Date.now();
+    if (recorder) {
+      try {
+        appendEntry(logFile(agentDir(cfg.id)), recorder.entry());
+      } catch (err) {
+        console.error("[question log]", err);
+      }
+    }
+  }
+}
+
+/** Pass a backend's events through, letting the question log see each one. */
+async function* recorded(gen: AsyncGenerator<AgentEvent, unknown[]>, recorder: TurnRecorder | null): AsyncGenerator<AgentEvent, unknown[]> {
+  if (!recorder) return yield* gen;
+  let finished = false;
+  try {
+    for (;;) {
+      const r = await gen.next();
+      if (r.done) {
+        finished = true;
+        return r.value;
+      }
+      recorder.see(r.value);
+      yield r.value;
+    }
+  } finally {
+    // The visitor went away mid-answer: let the backend clean up as yield* would have.
+    if (!finished) await gen.return([]);
   }
 }

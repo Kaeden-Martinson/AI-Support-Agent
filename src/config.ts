@@ -42,6 +42,10 @@ export const settings = {
     tools: flag(process.env.OLLAMA_TOOLS),
   },
   rateLimitPerMin: Number(process.env.RATE_LIMIT_PER_MIN ?? 20),
+  /** Append each answered question to data/agents/<id>/log.jsonl. Off by default. */
+  logQuestions: flag(process.env.LOG_QUESTIONS),
+  /** Question-log lines older than this are dropped when the server starts. */
+  logRetentionDays: Number(process.env.LOG_RETENTION_DAYS || 30),
 };
 
 export type Source =

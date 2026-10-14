@@ -1,8 +1,9 @@
 import readline from "node:readline/promises";
 import { parseArgs } from "node:util";
 import { chat } from "./agent.ts";
-import { isValidAgentId, listAgents, loadAgent, saveAgent, type AgentConfig, type Source } from "./config.ts";
+import { agentDir, isValidAgentId, listAgents, loadAgent, saveAgent, type AgentConfig, type Source } from "./config.ts";
 import { buildKnowledgeBase, getKnowledgeBase } from "./kb.ts";
+import { buildReport, entriesSince, formatReport, logFile, readEntries } from "./questionlog.ts";
 import { startServer } from "./server.ts";
 
 const HELP = `AI Support Agent
@@ -23,6 +24,9 @@ Usage: npm run cli -- <command> [options]
                      Chat with the agent in the terminal (interactive without a question)
   search <agent-id> <query>
                      Show raw search results (for debugging retrieval)
+  report <agent-id>  Summarize the question log (needs LOG_QUESTIONS=1 on the server):
+                     most-asked questions, likely docs gaps, errors, response times
+      --days <n>             How far back to look (default 7)
   list               List agents
   serve              Start the HTTP server (widget + API)
 `;
@@ -38,6 +42,7 @@ const { values, positionals } = parseArgs({
     origin: { type: "string", multiple: true },
     "max-pages": { type: "string" },
     contact: { type: "string" },
+    days: { type: "string" },
     help: { type: "boolean", short: "h" },
   },
 });
@@ -117,6 +122,14 @@ switch (command) {
     for (const h of kb.search(rest.join(" "), 8)) {
       console.log(`\n${h.score.toFixed(2)}  ${h.chunk.title} — ${h.chunk.section}\n      ${h.chunk.url}\n      ${h.chunk.text.slice(0, 160).replace(/\n/g, " ")}…`);
     }
+    break;
+  }
+  case "report": {
+    const cfg = requireAgent();
+    const days = values.days ? Number(values.days) : 7;
+    if (!(days > 0)) fail("--days must be a positive number");
+    const entries = entriesSince(readEntries(logFile(agentDir(cfg.id))), days);
+    console.log(formatReport(buildReport(entries), cfg.id, days));
     break;
   }
   case "list": {
