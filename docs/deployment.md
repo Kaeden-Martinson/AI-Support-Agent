@@ -64,3 +64,67 @@ With `LLM_FALLBACK=ollama` (and `LLM_PROVIDER=claude`), Claude answers as usual,
 **When it switches.** The decision is made per message, and only before any answer text has been sent. If Claude fails after part of an answer has already reached the visitor, the visitor sees the usual error instead of a second answer spliced onto the first. Claude's own retries (the SDK retries 429 and 5xx responses a couple of times) happen first, so a failover can take a few seconds. Each failover is logged on the server as `[fallback] Claude unavailable (<status and message>); answering with Ollama (<model>)`. If Ollama fails as well, the visitor sees Ollama's error message.
 
 **Conversations that switch.** Each backend keeps its own session history in its own format, and every finished exchange is also recorded as plain text. Before a backend answers, it catches up on the exchanges the other one answered, appended to its history as plain question/answer turns. So when Ollama takes over mid-conversation it sees the earlier questions and Claude's answers, and when Claude comes back its transcript is extended (never rewritten) with what Ollama said. Claude's searches and tool calls are not shown to Ollama, and Ollama's retrieved passages are not shown to Claude; each searches afresh.
+
+## Running from your own computer
+
+You don't need a server or an open port to put the widget on a live site. A [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) makes an outbound connection from your computer to Cloudflare and gives you a public HTTPS address that forwards to `http://localhost:3000`. It's free, and combined with `LLM_PROVIDER=ollama` the whole thing costs nothing to run.
+
+1. Install `cloudflared`:
+
+   ```bash
+   winget install Cloudflare.cloudflared
+   ```
+
+   (macOS: `brew install cloudflared`; Linux: see Cloudflare's downloads page.) Open a new terminal afterwards so it's on your `PATH`.
+
+2. In `.env`, set at least:
+
+   ```
+   TRUST_PROXY=1
+   RATE_LIMIT_PER_MIN=10
+   ```
+
+   `TRUST_PROXY=1` is required: every request reaches the server from the tunnel on localhost, so without it all visitors share one rate limit and one busy visitor blocks everyone. With it, the server takes the visitor's address from the `X-Forwarded-For` header Cloudflare adds. Keep the rate limit low with Ollama, since one GPU answers one message at a time.
+
+3. Make sure the agent's `allowedOrigins` lists the site that embeds the widget, e.g. `["https://example.com"]` (add `https://www.example.com` too if that host serves your site).
+
+4. Start the server, then the tunnel in a second terminal:
+
+   ```bash
+   npm run serve
+   ```
+
+   ```bash
+   npm run tunnel
+   ```
+
+   `npm run tunnel` warns if `TRUST_PROXY` isn't set or the server isn't answering, then runs `cloudflared` against `http://localhost:$PORT`.
+
+### Quick tunnel (testing)
+
+With no arguments, `npm run tunnel` runs `cloudflared tunnel --url http://localhost:3000`. No Cloudflare account is needed. It prints an address like `https://random-words.trycloudflare.com`; use it as `data-server` in the script tag:
+
+```html
+<script src="https://random-words.trycloudflare.com/widget.js" data-agent="my-project" data-server="https://random-words.trycloudflare.com" defer></script>
+```
+
+The address changes every time `cloudflared` restarts, so you have to update the script tag on your site each time. Cloudflare also says quick tunnels are for testing, with no uptime guarantee. Good for trying it out, not for leaving on a site for weeks.
+
+### Named tunnel (stable address on your own domain)
+
+For an address that never changes, such as `https://support.example.com`, use a named tunnel. You need a free Cloudflare account, and the domain's DNS must be managed by Cloudflare.
+
+1. `cloudflared tunnel login`: opens a browser to pick the domain, and saves a certificate in `~/.cloudflared`.
+2. `cloudflared tunnel create support-agent`: creates the tunnel and a credentials file.
+3. `cloudflared tunnel route dns support-agent support.example.com`: adds the DNS record.
+4. `npm run tunnel -- support-agent`: runs `cloudflared tunnel run --url http://localhost:3000 support-agent`.
+5. Use `https://support.example.com` as the script `src` and `data-server`.
+
+To start it with Windows instead of from a terminal, write the URL into a `config.yml` (see Cloudflare's docs) and run `cloudflared service install`.
+
+### Keeping it running
+
+- **The widget works only while your computer is on, awake and online, and while both `npm run serve` and the tunnel are running.** When it isn't, `widget.js` can't load, so the chat bubble doesn't appear on your site, and a visitor who already has the chat open gets a connection error. Your site is otherwise unaffected.
+- Stop the computer from sleeping while it serves visitors. On Windows: Settings → System → Power → "When plugged in, put my device to sleep after" → Never (laptops: keep it plugged in, and set the lid-close action to "Do nothing" if you close it). On macOS, `caffeinate -s` while it runs.
+- Windows Update restarts, Ollama updates and closed terminals all stop it. Check `https://<your address>/api/health` after a restart.
+- Everything a visitor sends reaches only your computer and, with Ollama, stays there. The question log (`LOG_QUESTIONS=1`) is written to `data/agents/<id>/log.jsonl` on the same disk.
