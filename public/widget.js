@@ -57,7 +57,7 @@
         var href = safeHref(url);
         return href ? hold(anchor(href, url)) : m;
       })
-      .replace(/https?:\/\/[^\s<\u0000]+?(?=[.,;:!?)]*(?:\s|$|\u0000))/g, function (url) {
+      .replace(/https?:\/\/[^\s<\u0000]+?(?=[.,;:!?)*_]*(?:\s|$|\u0000))/g, function (url) {
         var href = safeHref(url);
         return href ? hold(anchor(href, url)) : url;
       })
@@ -103,13 +103,13 @@
     var out = [];
     var seen = {};
     var text = md.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
-    var re = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|<(https?:\/\/[^>\s]+)>|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?])/g;
+    var re = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|<(https?:\/\/[^>\s]+)>|(https?:\/\/[^\s<>()]*[^\s<>().,;:!?*_])/g;
     var m;
     while ((m = re.exec(text)) && out.length < 4) {
       var href = m[2] || m[3] || m[4];
       if (seen[href]) continue;
       seen[href] = true;
-      out.push({ href: href, text: m[1] || href.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "") });
+      out.push({ href: href, text: (m[1] ? m[1].replace(/[*_`]/g, "").trim() : "") || href.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "") });
     }
     return out;
   }
@@ -286,7 +286,8 @@
         self.foot.textContent = "Answers come from " + cfg.name + "'s docs and can be wrong.";
         self.greeting = self.opts.greeting || cfg.greeting;
         self.suggestions = (cfg.suggestions || []).slice(0, 3);
-        self.renderHistory();
+        // Mid-request, a re-render would detach the placeholder/answer; the next render picks these up.
+        if (!self.busy) self.renderHistory();
       })
       .catch(function () {});
   };
@@ -391,7 +392,11 @@
     if (!this.state.open) this.open();
     this.busy = true;
     this.sendBtn.disabled = true;
+    this.sr.textContent = "";
     if (!retry) {
+      // Earlier errors no longer apply once a new question is sent.
+      var stale = this.log.querySelectorAll(".err");
+      for (var k = 0; k < stale.length; k++) stale[k].remove();
       var sugg = this.log.querySelector(".sugg");
       if (sugg) sugg.remove();
       this.input.value = "";
@@ -427,6 +432,7 @@
         var retryBtn = box.querySelector(".retry");
         if (retryBtn) {
           retryBtn.addEventListener("click", function () {
+            if (self.busy) return;
             box.remove();
             self.send(text, true);
           });
@@ -460,7 +466,7 @@
         var errored = null;
         function pump() {
           return reader.read().then(function (r) {
-            if (r.done) return finish(errored);
+            if (r.done) return finish(errored || (answer ? null : "No answer came back. Please try again."));
             buf += decoder.decode(r.value, { stream: true });
             var events = buf.split("\n\n");
             buf = events.pop();

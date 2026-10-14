@@ -223,12 +223,30 @@ export function SupportWidget() {
     // Copy buttons: hero commands come from data-copy (no "$ " prompts); code tabs copy their code.
     document.addEventListener("click", function (e) {
       var btn = e.target.closest && e.target.closest(".copy");
-      if (!btn || !navigator.clipboard) return;
+      if (!btn) return;
       var text = btn.dataset.copy || btn.parentElement.querySelector("code").textContent;
-      navigator.clipboard.writeText(text).then(function () {
+      function done() {
         btn.textContent = "Copied";
         setTimeout(function () { btn.textContent = "Copy"; }, 1200);
-      });
+      }
+      // Plain-HTTP pages have no navigator.clipboard; fall back to a hidden textarea.
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (err) {}
+        ta.remove();
+        if (ok) done();
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fallback);
+      } else {
+        fallback();
+      }
     });
 
     // Code tabs: click or arrow keys.

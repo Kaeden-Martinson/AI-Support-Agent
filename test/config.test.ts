@@ -13,3 +13,7 @@ test("keeps the first three, trims, drops blanks and caps length at 80", () => {
   const got = starterQuestions({ ...base, suggestions: ["  How do I install it? ", "", long, "Third", "Fourth"] });
   assert.deepEqual(got, ["How do I install it?", "x".repeat(80), "Third"]);
 });
+
+test("a non-array suggestions value gives an empty list", () => {
+  assert.deepEqual(starterQuestions({ ...base, suggestions: "How do I install it?" as unknown as string[] }), []);
+});

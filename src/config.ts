@@ -65,7 +65,7 @@ export function isValidAgentId(id: string): boolean {
 
 /** The starter questions the widget may show: the first three non-blank ones, each at most 80 characters. */
 export function starterQuestions(cfg: AgentConfig): string[] {
-  return (cfg.suggestions ?? [])
+  return (Array.isArray(cfg.suggestions) ? cfg.suggestions : [])
     .filter((s): s is string => typeof s === "string")
     .map((s) => s.trim().slice(0, 80))
     .filter(Boolean)

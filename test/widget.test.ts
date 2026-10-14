@@ -39,3 +39,13 @@ test("ignores URLs inside code", () => {
   const got = collectSources("Run `curl https://ex.com/a` then:\n```\nfetch('https://ex.com/b')\n```");
   assert.deepEqual(got, []);
 });
+
+test("a bare URL wrapped in bold drops the asterisks", () => {
+  const got = collectSources("See **https://ex.com/x** now");
+  assert.deepEqual(got.map((s) => s.href), ["https://ex.com/x"]);
+});
+
+test("strips markdown emphasis from chip labels", () => {
+  const got = collectSources("Read [**Guide**](https://ex.com/g)");
+  assert.equal(got[0].text, "Guide");
+});
