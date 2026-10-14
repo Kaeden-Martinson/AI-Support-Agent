@@ -49,15 +49,16 @@ export function parseChecks(data: unknown): CheckConversation[] {
 }
 
 // Models dress answers up in Markdown and typographic quotes; phrases shouldn't have to.
-function normalize(s: string): string {
+function plain(s: string): string {
   return s
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/\*\*|[*`]/g, "")
     .replace(/\s+/g, " ")
-    .toLowerCase()
     .trim();
 }
+
+const normalize = (s: string) => plain(s).toLowerCase();
 
 function toMatcher(pattern: string, where = "checks.json"): (answer: string) => boolean {
   const re = /^\/(.+)\/([a-z]*)$/s.exec(pattern);
@@ -68,7 +69,8 @@ function toMatcher(pattern: string, where = "checks.json"): (answer: string) => 
     } catch (err) {
       throw new Error(`${where}: bad regex ${pattern}: ${(err as Error).message}`);
     }
-    return (answer) => regex.test(answer);
+    // Case is kept for regexes, which have their own flags; Markdown and curly quotes are not.
+    return (answer) => regex.test(answer) || regex.test(plain(answer));
   }
   const phrase = normalize(pattern);
   return (answer) => normalize(answer).includes(phrase);
@@ -79,9 +81,13 @@ export function matches(answer: string, pattern: string): boolean {
   return toMatcher(pattern)(answer);
 }
 
-/** Every absolute http(s) link in the answer, from Markdown links and bare URLs. */
+/**
+ * Every absolute http(s) link in the answer, from Markdown links and bare URLs. URLs inside code
+ * (an example origin in a config snippet, say) aren't links: the widget shows them as code.
+ */
 export function extractLinks(answer: string): string[] {
-  const found = (answer.match(/https?:\/\/[^\s<>"'`)\]]+/g) ?? []).map((u) => u.replace(/[.,;:!?*_]+$/, ""));
+  const prose = answer.replace(/```[\s\S]*?```/g, "").replace(/`[^`]*`/g, "");
+  const found = (prose.match(/https?:\/\/[^\s<>"'`)\]]+/g) ?? []).map((u) => u.replace(/[.,;:!?*_]+$/, ""));
   return [...new Set(found)];
 }
 

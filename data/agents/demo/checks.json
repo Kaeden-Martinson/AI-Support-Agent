@@ -37,7 +37,7 @@
   [
     {
       "ask": "Write me a cover letter for a marketing job.",
-      "expect": ["/can't|cannot|can only|only help|not able|unable|outside/i"],
+      "expect": ["/can't|cannot|can only|only help|not able|unable|outside|decline/i"],
       "forbid": ["Dear Hiring Manager", "/sincerely/i"]
     }
   ]

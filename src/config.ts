@@ -40,6 +40,8 @@ export const settings = {
     passages: Number(process.env.OLLAMA_PASSAGES || 6),
     /** Also let the model call search_docs/read_page itself. Needs a model with tool support. */
     tools: flag(process.env.OLLAMA_TOOLS),
+    /** Let thinking models (qwen3, gemma4, …) reason before answering. Slower, and the reasoning is never shown. */
+    think: flag(process.env.OLLAMA_THINK),
   },
   rateLimitPerMin: Number(process.env.RATE_LIMIT_PER_MIN ?? 20),
   /** Append each answered question to data/agents/<id>/log.jsonl. Off by default. */
