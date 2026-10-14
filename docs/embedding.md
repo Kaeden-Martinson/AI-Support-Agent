@@ -22,6 +22,7 @@ Replace `http://localhost:3000` with wherever the server is deployed and `my-pro
 | `data-color` | `#1f6f50` | Accent color (any CSS color). Before the redesign the default was blue; set `data-color="#2563eb"` to keep it |
 | `data-position` | `right` | `left` or `right` corner |
 | `data-greeting` | agent greeting | First message shown in the chat |
+| `data-hint` | (none) | One line shown beside the closed bubble once per visit, e.g. "Questions? Ask here." Up to 80 characters |
 | `data-open` | `false` | `true` opens the chat on page load |
 
 ## React / Next.js
@@ -91,6 +92,7 @@ SupportAgent.init({
   title: "Help",
   color: "#16a34a",
   position: "left",
+  hint: "Questions? Ask here.",
 });
 ```
 

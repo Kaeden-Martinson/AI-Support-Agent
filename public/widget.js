@@ -4,7 +4,7 @@
  *   <script src="https://your-server/widget.js" data-agent="my-project" defer></script>
  *
  * Optional attributes: data-server, data-title, data-color, data-position="left|right",
- * data-greeting, data-open="true". Or skip data-agent and call SupportAgent.init({...}) yourself.
+ * data-greeting, data-hint, data-open="true". Or skip data-agent and call SupportAgent.init({...}) yourself.
  */
 (function () {
   "use strict";
@@ -179,7 +179,13 @@
     ".send{flex-shrink:0;width:28px;height:28px;border:0;border-radius:6px;background:var(--c);color:#fff;display:grid;place-items:center;cursor:pointer}" +
     ".send:disabled{background:var(--line);cursor:default}" +
     ".foot{font-size:11px;color:var(--muted);text-align:center;padding:6px 12px 8px}" +
-    ".sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}";
+    ".sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}" +
+    ".hint{position:absolute;bottom:6px;right:56px;width:max-content;max-width:220px;background:var(--bg);color:var(--fg);" +
+    "border:1px solid var(--line);border-radius:10px 10px 3px 10px;padding:7px 11px;font-size:13px;box-shadow:0 4px 14px rgba(24,24,27,.08)}" +
+    ".left .hint{right:auto;left:56px;border-radius:10px 10px 10px 3px}.open .hint{display:none}" +
+    ".sugg{display:flex;flex-direction:column;align-items:flex-start;gap:6px}" +
+    ".sugg button{font:inherit;font-size:13px;text-align:left;color:var(--fg);background:var(--bg);border:1px solid var(--line);" +
+    "border-radius:8px;padding:7px 11px;cursor:pointer}.sugg button:hover{border-color:var(--c)}";
 
   var ICON_CHAT =
     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
@@ -267,6 +273,7 @@
 
     this.renderHistory();
     if (this.state.open || this.opts.open) this.open();
+    else if (this.opts.hint && !storage(this.key + ":hint")) this.showHint();
   };
 
   Widget.prototype.loadConfig = function () {
@@ -278,6 +285,7 @@
         if (!self.opts.title) self.title.textContent = cfg.name;
         self.foot.textContent = "Answers come from " + cfg.name + "'s docs and can be wrong.";
         self.greeting = self.opts.greeting || cfg.greeting;
+        self.suggestions = (cfg.suggestions || []).slice(0, 3);
         self.renderHistory();
       })
       .catch(function () {});
@@ -285,6 +293,25 @@
 
   Widget.prototype.save = function () {
     storage(this.key, this.state);
+  };
+
+  // One-line nudge beside the closed launcher; shown once per browser session, gone after 8s or on open.
+  Widget.prototype.showHint = function () {
+    var self = this;
+    var hint = document.createElement("div");
+    hint.className = "hint";
+    hint.setAttribute("role", "status");
+    hint.textContent = String(this.opts.hint).slice(0, 80);
+    this.root.insertBefore(hint, this.launcher);
+    storage(this.key + ":hint", true);
+    this.hint = hint;
+    this.hintTimer = setTimeout(function () { self.hideHint(); }, 8000);
+  };
+  Widget.prototype.hideHint = function () {
+    if (!this.hint) return;
+    clearTimeout(this.hintTimer);
+    this.hint.remove();
+    this.hint = null;
   };
 
   Widget.prototype.add = function (cls, html) {
@@ -299,6 +326,19 @@
   Widget.prototype.renderHistory = function () {
     this.log.innerHTML = "";
     if (this.greeting) this.add("bot", markdown(this.greeting));
+    if (!this.state.history.length && this.suggestions && this.suggestions.length) {
+      var self = this;
+      var box = document.createElement("div");
+      box.className = "sugg";
+      this.suggestions.forEach(function (q) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = q;
+        b.addEventListener("click", function () { self.send(q); });
+        box.appendChild(b);
+      });
+      this.log.appendChild(box);
+    }
     for (var i = 0; i < this.state.history.length; i++) {
       var m = this.state.history[i];
       if (m.role === "user") this.add("user", esc(m.text));
@@ -315,6 +355,7 @@
   };
 
   Widget.prototype.open = function () {
+    this.hideHint();
     this.state.open = true;
     this.root.classList.add("open");
     this.launcher.innerHTML = ICON_CLOSE;
@@ -351,6 +392,8 @@
     this.busy = true;
     this.sendBtn.disabled = true;
     if (!retry) {
+      var sugg = this.log.querySelector(".sugg");
+      if (sugg) sugg.remove();
       this.input.value = "";
       this.input.style.height = "auto";
       this.add("user", esc(text));
@@ -460,7 +503,7 @@
   var instance = null;
   var api = {
     __loaded: true,
-    /** Mount the widget. opts: { agent, server?, title?, color?, position?, greeting?, open? } */
+    /** Mount the widget. opts: { agent, server?, title?, color?, position?, greeting?, hint?, open? } */
     init: function (opts) {
       if (instance) return api;
       if (!opts || !opts.agent) throw new Error("SupportAgent.init: `agent` is required");
@@ -488,6 +531,7 @@
       color: d.color,
       position: d.position,
       greeting: d.greeting,
+      hint: d.hint,
       open: d.open === "true",
     });
   }
