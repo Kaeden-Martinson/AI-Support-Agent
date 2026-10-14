@@ -62,10 +62,18 @@ async function readJson(req: http.IncomingMessage): Promise<Record<string, unkno
   }
 }
 
-function clientIp(req: http.IncomingMessage): string {
+export function clientIp(req: http.IncomingMessage): string {
   // Behind a reverse proxy, set TRUST_PROXY=1 so the real visitor IP is used.
-  const fwd = process.env.TRUST_PROXY ? String(req.headers["x-forwarded-for"] ?? "").split(",")[0].trim() : "";
-  return fwd || req.socket.remoteAddress || "unknown";
+  // Visitors can send their own X-Forwarded-For, and proxies append to it, so only
+  // the last entry (added by the proxy in front of us) is trustworthy. Cloudflare
+  // also sets CF-Connecting-IP, which it overwrites, so prefer that when present.
+  if (process.env.TRUST_PROXY) {
+    const cf = String(req.headers["cf-connecting-ip"] ?? "").trim();
+    if (cf) return cf;
+    const fwd = String(req.headers["x-forwarded-for"] ?? "").split(",").at(-1)!.trim();
+    if (fwd) return fwd;
+  }
+  return req.socket.remoteAddress || "unknown";
 }
 
 function serveStatic(res: http.ServerResponse, file: string, type: string) {

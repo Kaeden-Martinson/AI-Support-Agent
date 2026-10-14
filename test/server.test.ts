@@ -33,3 +33,28 @@ test("/demo still serves the test page", async () => {
   const res = await fetch(`${await base()}/demo`);
   assert.match(await res.text(), /<title>Support Agent Demo<\/title>/);
 });
+
+test("clientIp ignores a spoofed X-Forwarded-For behind a trusted proxy", async () => {
+  const { clientIp } = await import("../src/server.ts");
+  const req = (headers: Record<string, string>) =>
+    ({ headers, socket: { remoteAddress: "127.0.0.1" } }) as unknown as import("node:http").IncomingMessage;
+  const prev = process.env.TRUST_PROXY;
+  try {
+    delete process.env.TRUST_PROXY;
+    assert.equal(clientIp(req({ "x-forwarded-for": "1.2.3.4" })), "127.0.0.1");
+
+    process.env.TRUST_PROXY = "1";
+    // The visitor sent a fake value; the proxy appended the real one.
+    assert.equal(clientIp(req({ "x-forwarded-for": "6.6.6.6, 203.0.113.7" })), "203.0.113.7");
+    assert.equal(clientIp(req({ "x-forwarded-for": "203.0.113.7" })), "203.0.113.7");
+    // Cloudflare's own header wins over anything in X-Forwarded-For.
+    assert.equal(
+      clientIp(req({ "cf-connecting-ip": "198.51.100.9", "x-forwarded-for": "6.6.6.6, 198.51.100.9" })),
+      "198.51.100.9",
+    );
+    assert.equal(clientIp(req({})), "127.0.0.1");
+  } finally {
+    if (prev === undefined) delete process.env.TRUST_PROXY;
+    else process.env.TRUST_PROXY = prev;
+  }
+});

@@ -46,7 +46,7 @@ One server can host many agents, one per project. Each agent has its own folder 
 | `OLLAMA_PASSAGES` | `6` | Knowledge-base passages put in front of the model for each question |
 | `OLLAMA_TOOLS` | `0` | Set to `1` to also let the model run its own `search_docs`/`read_page` calls. Needs a model with tool calling; small models often do worse with it on |
 | `RATE_LIMIT_PER_MIN` | `20` | Chat messages per visitor IP per minute, per agent |
-| `TRUST_PROXY` | | Set to `1` behind a reverse proxy so rate limits use `X-Forwarded-For` |
+| `TRUST_PROXY` | | Set to `1` behind a reverse proxy so rate limits use the visitor IP from `CF-Connecting-IP` (Cloudflare) or the last `X-Forwarded-For` entry. Only set it when a proxy really sits in front, or visitors can fake their IP |
 | `LOG_QUESTIONS` | `0` | Set to `1` to keep a log of visitor questions; see [Question log](#question-log) |
 | `LOG_RETENTION_DAYS` | `30` | Question-log entries older than this are deleted each time the server starts |
 

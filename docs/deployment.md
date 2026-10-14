@@ -10,7 +10,7 @@ The server is a single Node process with no database: agent configs and indexes 
 4. `npm run cli -- ingest <id>` (or commit `kb.json`, or call the reindex endpoint after boot).
 5. `npm run serve`
 
-Put it behind HTTPS (most platforms do this for you) and set `TRUST_PROXY=1` when a proxy sits in front.
+Put it behind HTTPS (most platforms do this for you) and set `TRUST_PROXY=1` when a proxy sits in front. With it set, rate limits key on `CF-Connecting-IP` (Cloudflare, including Cloudflare Tunnel) or else the last `X-Forwarded-For` entry, which only the proxy directly in front can set. Only set it when a proxy really sits in front, otherwise visitors can fake their IP.
 
 ## Checklist before going live
 
