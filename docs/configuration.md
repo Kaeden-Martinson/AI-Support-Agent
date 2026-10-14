@@ -10,6 +10,7 @@
   "instructions": "Answer in a friendly, direct tone. For billing questions, direct people to the pricing page.",
   "supportContact": "GitHub issues at https://github.com/me/my-project/issues",
   "greeting": "Hi! Ask me anything about My Project.",
+  "suggestions": ["How do I install it?", "How do retries work?"],
   "allowedOrigins": ["https://myproject.dev", "http://localhost:5173"],
   "sources": [{ "type": "dir", "path": "../my-project/docs" }]
 }
@@ -22,6 +23,7 @@
 | `instructions` | Optional extra rules: tone, scope, what to escalate |
 | `supportContact` | Where to send people when the docs don't have the answer |
 | `greeting` | First message in the widget |
+| `suggestions` | Up to three starter questions shown as buttons when the chat first opens (each up to 80 characters) |
 | `allowedOrigins` | Sites allowed to embed this agent. `["*"]` allows any site; use explicit origins in production so other sites can't spend your API credits |
 | `sources` | What to index; see [knowledge-base.md](knowledge-base.md) |
 
@@ -67,7 +69,7 @@ The response is a Server-Sent Events stream. Each event is a `data:` line with J
 
 ### `GET /api/agents/:id/config`
 
-Returns `{ name, greeting, ready }`.
+Returns `{ name, greeting, suggestions, ready }`.
 
 ### `POST /api/agents/:id/reindex`
 

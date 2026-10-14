@@ -4,6 +4,7 @@
   "description": "AI Support Agent is a self-hosted, open-source support chatbot for developers. It indexes a website or docs folder and adds a chat widget to any webpage with one script tag.",
   "supportContact": "the project's README",
   "greeting": "Hi! I can help you set up and embed AI Support Agent in your project. What are you building?",
+  "suggestions": ["How do I embed it in Next.js?", "Can I run it without an API key?", "How do I train it on my docs?"],
   "allowedOrigins": ["*"],
   "sources": [
     { "type": "file", "path": "README.md", "baseUrl": "https://github.com/Kaeden-Martinson/AI-Support-Agent/blob/main/" },

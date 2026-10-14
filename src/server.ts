@@ -3,7 +3,7 @@ import http from "node:http";
 import path from "node:path";
 import { chat } from "./agent.ts";
 import { checkOllama } from "./backends/ollama.ts";
-import { ROOT, loadAgent, settings, type AgentConfig } from "./config.ts";
+import { ROOT, loadAgent, settings, starterQuestions, type AgentConfig } from "./config.ts";
 import { buildKnowledgeBase, getKnowledgeBase } from "./kb.ts";
 
 const MAX_BODY = 16 * 1024;
@@ -101,7 +101,12 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
 
   if (action === "config" && req.method === "GET") {
     const kb = getKnowledgeBase(agentId);
-    return json(res, 200, { name: agent.name, greeting: agent.greeting ?? `Hi! Ask me anything about ${agent.name}.`, ready: !!kb });
+    return json(res, 200, {
+      name: agent.name,
+      greeting: agent.greeting ?? `Hi! Ask me anything about ${agent.name}.`,
+      suggestions: starterQuestions(agent),
+      ready: !!kb,
+    });
   }
 
   if (action === "reindex" && req.method === "POST") {

@@ -50,6 +50,8 @@ export interface AgentConfig {
   /** Where to send people when the docs don't have the answer. */
   supportContact?: string;
   greeting?: string;
+  /** Starter questions the widget offers when a chat first opens. */
+  suggestions?: string[];
   /** Origins allowed to embed the widget. ["*"] allows any origin (fine for local dev). */
   allowedOrigins: string[];
   sources: Source[];
@@ -59,6 +61,15 @@ const ID_RE = /^[a-z0-9][a-z0-9-]{0,62}$/;
 
 export function isValidAgentId(id: string): boolean {
   return ID_RE.test(id);
+}
+
+/** The starter questions the widget may show: the first three non-blank ones, each at most 80 characters. */
+export function starterQuestions(cfg: AgentConfig): string[] {
+  return (cfg.suggestions ?? [])
+    .filter((s): s is string => typeof s === "string")
+    .map((s) => s.trim().slice(0, 80))
+    .filter(Boolean)
+    .slice(0, 3);
 }
 
 export function agentDir(id: string): string {
