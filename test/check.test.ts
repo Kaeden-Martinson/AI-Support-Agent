@@ -17,11 +17,18 @@ test("/slashes/ make a regex, with its own flags", () => {
   assert.ok(matches("No, iPhone isn't supported", "/\\b(no|not)\\b/i"));
   assert.ok(!matches("CHROME", "/chrome/"));
   assert.ok(matches("CHROME", "/chrome/i"));
+  assert.ok(matches("Embed it on **any** site", "/any (site|origin)/"));
+  assert.ok(matches("You can’t share it", "/can't/"));
 });
 
 test("links come from Markdown and bare URLs, without trailing punctuation", () => {
   const answer = "See [the FAQ](https://example.com/faq) or https://example.com/docs/install. Also https://example.com/faq again.";
   assert.deepEqual(extractLinks(answer), ["https://example.com/faq", "https://example.com/docs/install"]);
+});
+
+test("URLs inside code are example values, not links", () => {
+  const answer = 'Set `"allowedOrigins": ["https://your-site.com"]`:\n\n```json\n{ "baseUrl": "https://github.com/me/docs/" }\n```\n\nSee https://example.com/faq.';
+  assert.deepEqual(extractLinks(answer), ["https://example.com/faq"]);
 });
 
 test("bad links are those that aren't knowledge-base pages", () => {
