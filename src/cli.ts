@@ -1,6 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import readline from "node:readline/promises";
 import { parseArgs } from "node:util";
 import { chat } from "./agent.ts";
+import { formatResult, formatSummary, parseChecks, runChecks } from "./check.ts";
 import { agentDir, isValidAgentId, listAgents, loadAgent, saveAgent, type AgentConfig, type Source } from "./config.ts";
 import { buildKnowledgeBase, getKnowledgeBase } from "./kb.ts";
 import { buildReport, entriesSince, formatReport, logFile, readEntries } from "./questionlog.ts";
@@ -22,6 +25,8 @@ Usage: npm run cli -- <command> [options]
   ingest <agent-id>  Crawl/read the agent's sources and rebuild its knowledge base
   ask <agent-id> [question]
                      Chat with the agent in the terminal (interactive without a question)
+  check <agent-id>   Ask the questions in data/agents/<id>/checks.json and test the answers
+                     (exits 1 if any fail)
   search <agent-id> <query>
                      Show raw search results (for debugging retrieval)
   report <agent-id>  Summarize the question log (needs LOG_QUESTIONS=1 on the server):
@@ -115,6 +120,28 @@ switch (command) {
       const q = (await rl.question("\n> ")).trim();
       if (q) sid = await ask(cfg, q, sid);
     }
+  }
+  case "check": {
+    const cfg = requireAgent();
+    const kb = getKnowledgeBase(cfg.id) ?? fail(`No knowledge base yet. Run: npm run cli -- ingest ${cfg.id}`);
+    const file = path.join(agentDir(cfg.id), "checks.json");
+    if (!fs.existsSync(file)) fail(`No checks yet. Write ${path.relative(process.cwd(), file)} (see docs/knowledge-base.md)`);
+    let conversations;
+    try {
+      conversations = parseChecks(JSON.parse(fs.readFileSync(file, "utf8")));
+    } catch (err) {
+      fail(`${path.relative(process.cwd(), file)}: ${(err as Error).message}`);
+    }
+    const turns = conversations.reduce((n, c) => n + c.length, 0);
+    console.log(`Checking ${cfg.name}: ${conversations.length} conversations, ${turns} questions\n`);
+    const results = await runChecks(
+      conversations,
+      (message, sessionId) => chat(cfg, kb, message, { sessionId }),
+      { pageUrls: kb.pages.map((p) => p.url), text: kb.pages.map((p) => p.text).join("\n") },
+      (r) => console.log(formatResult(r) + "\n"),
+    );
+    console.log(formatSummary(results));
+    process.exit(results.every((r) => r.passed) ? 0 : 1);
   }
   case "search": {
     const cfg = requireAgent();

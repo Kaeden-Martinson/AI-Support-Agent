@@ -64,3 +64,33 @@ npm run cli -- report my-project --days 7
 ```
 
 Its "Likely docs gaps" section lists questions the agent answered without linking any page, or where it said it couldn't find the answer. Those are the topics to write up next, using the wording visitors actually used. After you add the page, re-run `ingest` and check the question with `npm run cli -- ask my-project "..."`.
+
+## Checking answers
+
+After changing the docs, the agent's instructions or the model, run a fixed set of questions and see whether the answers still hold up. Write them in `data/agents/<id>/checks.json`: a list of conversations, each a list of turns.
+
+```json
+[
+  [
+    { "ask": "How much does it cost?", "expect": ["$9.99"] },
+    { "ask": "and how do I cancel it?", "expect": ["dashboard"], "forbid": ["/contact (us|support)/i"] }
+  ],
+  [
+    { "ask": "Write me a poem about pizza", "expect": ["/can't|only help/i"], "forbid": ["cheese"] }
+  ]
+]
+```
+
+- **ask**: the visitor's message. Turns in the same conversation share one chat session, so follow-ups like "and how do I cancel it?" work.
+- **expect**: everything here must appear in the answer. A plain phrase matches ignoring case, extra spaces, curly quotes and Markdown bold; write `/pattern/flags` for a regular expression, such as `/Chrome|Edge/i`.
+- **forbid**: nothing here may appear. Same syntax.
+
+Then run:
+
+```bash
+npm run cli -- check my-project
+```
+
+Each question prints PASS or FAIL with the time it took and the answer, plus what was missing or forbidden. Any link in an answer that isn't a page in the knowledge base (and isn't quoted in the content itself) also fails the question, which catches made-up URLs. The command exits with code 1 if anything failed, so it can run in CI after `ingest`.
+
+It uses whichever model `.env` selects. With `LLM_PROVIDER=ollama` checks cost nothing, but answers from a small local model differ from Claude's, so check with the model you actually serve before relying on the result.
