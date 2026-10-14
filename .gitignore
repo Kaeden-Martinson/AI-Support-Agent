@@ -3,3 +3,9 @@ node_modules/
 data/agents/*/kb.json
 .superpowers/
 data/agents/*/log.jsonl
+
+# Private agents for the owner's own sites; only the demo agent is published.
+data/agents/mysite/
+
+# Local copy of a third-party plugin, not part of this project.
+superpowers/
