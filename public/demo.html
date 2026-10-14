@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Support Agent Demo</title>
+  <style>
+    :root { --bg: #fafaf9; --fg: #1c1917; --muted: #57534e; --line: #e7e5e4; --code: #f5f5f4; --accent: #2563eb; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0c0a09; --fg: #f5f5f4; --muted: #a8a29e; --line: #292524; --code: #1c1917; --accent: #60a5fa; } }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 56px 16px 120px; }
+    h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+    .lede { color: var(--muted); margin: 0 0 32px; }
+    h2 { font-size: 18px; margin: 36px 0 8px; }
+    pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: 13.5px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .try { display: flex; flex-wrap: wrap; gap: 8px; }
+    .try button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .try button:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Support agent demo</h1>
+    <p class="lede">The chat bubble in the corner is the widget, answering from this project's own docs. Ask it how to embed it, configure it, or train it on your content.</p>
+
+    <h2>Try a question</h2>
+    <div class="try">
+      <button type="button">How do I add this to a Next.js app?</button>
+      <button type="button">How do I train it on my docs folder?</button>
+      <button type="button">What should I change before deploying?</button>
+      <button type="button">Can I open the chat from my own button?</button>
+    </div>
+
+    <h2>The embed snippet</h2>
+    <pre><code>&lt;script src="http://localhost:3000/widget.js" data-agent="demo" defer&gt;&lt;/script&gt;</code></pre>
+  </main>
+
+  <script src="/widget.js" data-agent="demo" defer></script>
+  <script>
+    document.querySelectorAll(".try button").forEach(function (b) {
+      b.addEventListener("click", function () { window.SupportAgent && SupportAgent.ask(b.textContent); });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "name": "ai-support-agent",
+  "version": "0.1.0",
+  "description": "Self-hosted AI support agent: crawl your site or docs, then drop a chat widget into any webpage.",
+  "scripts": {
+    "serve": "node --env-file-if-exists=.env src/cli.ts serve",
+    "cli": "node --env-file-if-exists=.env src/cli.ts",
+    "typecheck": "tsc"
+  },
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  }
+}

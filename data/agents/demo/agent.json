@@ -1,0 +1,12 @@
+{
+  "id": "demo",
+  "name": "AI Support Agent",
+  "description": "AI Support Agent is a self-hosted, open-source support chatbot for developers. It indexes a website or docs folder and adds a chat widget to any webpage with one script tag.",
+  "supportContact": "the project's README",
+  "greeting": "Hi! I can help you set up and embed AI Support Agent in your project. What are you building?",
+  "allowedOrigins": ["*"],
+  "sources": [
+    { "type": "file", "path": "README.md" },
+    { "type": "dir", "path": "docs" }
+  ]
+}
