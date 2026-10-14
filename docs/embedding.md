@@ -19,7 +19,7 @@ Replace `http://localhost:3000` with wherever the server is deployed and `my-pro
 | `data-agent` | (required) | Agent id, e.g. `my-project` |
 | `data-server` | origin of the script URL | API server base URL, if different from where widget.js is served |
 | `data-title` | agent name | Header text |
-| `data-color` | `#2563eb` | Accent color (any CSS color) |
+| `data-color` | `#1f6f50` | Accent color (any CSS color). Before the redesign the default was blue; set `data-color="#2563eb"` to keep it |
 | `data-position` | `right` | `left` or `right` corner |
 | `data-greeting` | agent greeting | First message shown in the chat |
 | `data-open` | `false` | `true` opens the chat on page load |
