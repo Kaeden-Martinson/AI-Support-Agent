@@ -34,12 +34,13 @@ One server can host many agents, one per project. Each agent has its own folder 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `LLM_PROVIDER` | `claude` | Which model answers questions: `claude` or `ollama` (a local model; see [Running fully self-hosted](deployment.md#running-fully-self-hosted)) |
+| `LLM_FALLBACK` | | Set to `ollama` to answer with the local Ollama model whenever Claude is unavailable (see [Ollama as a backup for Claude](deployment.md#ollama-as-a-backup-for-claude)). Only applies with `LLM_PROVIDER=claude`; off when empty |
 | `ANTHROPIC_API_KEY` | | Claude API key (required when `LLM_PROVIDER=claude`) |
 | `PORT` | `3000` | HTTP port |
 | `ADMIN_TOKEN` | | Bearer token for the reindex endpoint; reindex is disabled when empty |
 | `CLAUDE_MODEL` | `claude-opus-5-5` | Model that answers questions |
 | `CLAUDE_EFFORT` | `low` | `low`, `medium`, `high`, `xhigh` or `max`. Higher means more thorough and slower |
-| `OLLAMA_URL` | `http://localhost:11434` | Where Ollama listens |
+| `OLLAMA_URL` | `http://localhost:11434` | Where Ollama listens. The `OLLAMA_*` settings apply with `LLM_PROVIDER=ollama` or `LLM_FALLBACK=ollama` |
 | `OLLAMA_MODEL` | `llama3.1:8b` | Ollama model to use. Pull it first with `ollama pull <model>` |
 | `OLLAMA_NUM_CTX` | `8192` | Context window requested from Ollama, in tokens. Ollama's own default is too small for the retrieved passages; larger values use more GPU memory |
 | `OLLAMA_PASSAGES` | `6` | Knowledge-base passages put in front of the model for each question |

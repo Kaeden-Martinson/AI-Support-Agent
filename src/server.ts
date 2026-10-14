@@ -153,8 +153,18 @@ export function startServer(port = settings.port) {
     if (settings.provider === "ollama") {
       console.log(`  model:  ${settings.ollama.model} via Ollama at ${settings.ollama.url}`);
       checkOllama().then((warning) => warning && console.warn(`\n  Warning: ${warning}`));
-    } else if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
-      console.warn("\n  Warning: ANTHROPIC_API_KEY is not set, so chat requests will fail. Add it to .env.");
+      return;
+    }
+    if (settings.fallback === "ollama") {
+      console.log(`  backup: ${settings.ollama.model} via Ollama at ${settings.ollama.url}, used when Claude is unavailable`);
+      checkOllama().then((warning) => warning && console.warn(`\n  Warning: the Ollama backup won't work. ${warning}`));
+    }
+    if (!process.env.ANTHROPIC_API_KEY && !process.env.ANTHROPIC_AUTH_TOKEN) {
+      console.warn(
+        settings.fallback
+          ? "\n  Warning: ANTHROPIC_API_KEY is not set, so every chat request will go to the Ollama backup."
+          : "\n  Warning: ANTHROPIC_API_KEY is not set, so chat requests will fail. Add it to .env.",
+      );
     }
   });
   return server;

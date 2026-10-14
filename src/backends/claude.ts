@@ -3,7 +3,7 @@ import type { BetaMessageParam, BetaTool, BetaToolResultBlockParam } from "@anth
 import type { AgentEvent } from "../agent.ts";
 import { settings, type AgentConfig } from "../config.ts";
 import type { KnowledgeBase } from "../kb.ts";
-import { READ_PAGE_DESCRIPTION, SEARCH_DOCS_DESCRIPTION, runTool, toolStatus, type Backend, type TurnInput } from "./shared.ts";
+import { READ_PAGE_DESCRIPTION, SEARCH_DOCS_DESCRIPTION, runTool, toolStatus, type Backend, type TextTurn, type TurnInput } from "./shared.ts";
 
 const MAX_TOOL_ROUNDS = 6;
 
@@ -133,4 +133,24 @@ function errorMessage(err: unknown): string {
       : "Something went wrong answering that. Please try again.";
 }
 
-export const claudeBackend: Backend = { answer, errorMessage };
+// Plain-text turns keep the transcript alternating user/assistant, so appending them is valid.
+function textTurns(turns: TextTurn[]): BetaMessageParam[] {
+  return turns.flatMap((t): BetaMessageParam[] => [
+    { role: "user", content: t.user },
+    { role: "assistant", content: t.assistant || "(no answer)" },
+  ]);
+}
+
+/** Errors where trying again elsewhere makes sense: Claude is down, overloaded, rate limited, or the account can't be used. */
+function isUnavailable(err: unknown): boolean {
+  if (err instanceof Anthropic.APIUserAbortError) return false;
+  if (err instanceof Anthropic.APIConnectionError) return true;
+  // No API key configured: the SDK throws a plain Error before sending anything.
+  if (!(err instanceof Anthropic.APIError)) return err instanceof Error && /could not resolve authentication method/i.test(err.message);
+  const status = err.status ?? 0;
+  if (status >= 500 || status === 429 || status === 401 || status === 402 || status === 403) return true;
+  // Running out of credits comes back as a 400 invalid_request_error.
+  return status === 400 && /credit balance|billing/i.test(err.message);
+}
+
+export const claudeBackend: Backend = { answer, errorMessage, textTurns, isUnavailable };

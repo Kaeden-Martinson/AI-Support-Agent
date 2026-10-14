@@ -12,6 +12,14 @@ function provider(): LlmProvider {
   return v;
 }
 
+/** Backup model for when Claude is unavailable. Only applies with LLM_PROVIDER=claude. */
+function fallback(): "ollama" | null {
+  const v = (process.env.LLM_FALLBACK || "").toLowerCase();
+  if (v === "ollama") return "ollama";
+  if (v === "" || v === "none" || v === "off") return null;
+  throw new Error(`LLM_FALLBACK must be "ollama" or empty, got "${v}"`);
+}
+
 function flag(v: string | undefined): boolean {
   return /^(1|true|yes|on)$/i.test(v ?? "");
 }
@@ -20,6 +28,7 @@ export const settings = {
   port: Number(process.env.PORT ?? 3000),
   adminToken: process.env.ADMIN_TOKEN ?? "",
   provider: provider(),
+  fallback: fallback(),
   model: process.env.CLAUDE_MODEL || "claude-opus-5-5",
   effort: (process.env.CLAUDE_EFFORT || "low") as "low" | "medium" | "high" | "xhigh" | "max",
   ollama: {

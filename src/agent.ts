@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { claudeBackend } from "./backends/claude.ts";
+import { withFallback } from "./backends/fallback.ts";
 import { ollamaBackend } from "./backends/ollama.ts";
 import { clean, type Backend } from "./backends/shared.ts";
 import { settings, type AgentConfig } from "./config.ts";
@@ -8,7 +9,12 @@ import type { KnowledgeBase } from "./kb.ts";
 const MAX_TURNS_PER_SESSION = 40;
 const SESSION_TTL_MS = 60 * 60 * 1000;
 
-const backend: Backend = settings.provider === "ollama" ? ollamaBackend : claudeBackend;
+const backend: Backend =
+  settings.provider === "ollama"
+    ? ollamaBackend
+    : settings.fallback === "ollama"
+      ? withFallback(claudeBackend, ollamaBackend, { primary: "Claude", backup: `Ollama (${settings.ollama.model})` })
+      : claudeBackend;
 
 export type AgentEvent =
   | { type: "session"; sessionId: string }

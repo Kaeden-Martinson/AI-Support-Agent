@@ -1,7 +1,7 @@
 import type { AgentEvent } from "../agent.ts";
 import { settings, type AgentConfig } from "../config.ts";
 import type { KnowledgeBase, SearchHit } from "../kb.ts";
-import { READ_PAGE_DESCRIPTION, SEARCH_DOCS_DESCRIPTION, clean, runTool, toolStatus, type Backend, type TurnInput } from "./shared.ts";
+import { READ_PAGE_DESCRIPTION, SEARCH_DOCS_DESCRIPTION, clean, runTool, toolStatus, type Backend, type TextTurn, type TurnInput } from "./shared.ts";
 
 // Small local models do much better when the relevant docs are already in the prompt than
 // when they have to drive a search loop themselves, so each turn retrieves passages
@@ -211,7 +211,14 @@ function errorMessage(err: unknown): string {
   return "Something went wrong answering that. Please try again.";
 }
 
-export const ollamaBackend: Backend = { answer, errorMessage };
+function textTurns(turns: TextTurn[]): OllamaMessage[] {
+  return turns.flatMap((t): OllamaMessage[] => [
+    { role: "user", content: t.user },
+    { role: "assistant", content: t.assistant },
+  ]);
+}
+
+export const ollamaBackend: Backend = { answer, errorMessage, textTurns };
 
 /** Startup check: null when Ollama is reachable and has the model, otherwise a warning to print. */
 export async function checkOllama(): Promise<string | null> {
@@ -222,7 +229,7 @@ export async function checkOllama(): Promise<string | null> {
     if (!res.ok) return `Ollama at ${url} answered ${res.status}. Check OLLAMA_URL.`;
     names = ((await res.json()) as { models?: { name: string }[] }).models?.map((m) => m.name) ?? [];
   } catch {
-    return `Can't reach Ollama at ${url}, so chat requests will fail. Start it (ollama serve) or fix OLLAMA_URL.`;
+    return `Can't reach Ollama at ${url}. Start it (ollama serve) or fix OLLAMA_URL.`;
   }
   const wanted = model.includes(":") ? model : `${model}:latest`;
   if (!names.includes(wanted)) return `Ollama doesn't have the model "${model}". Run: ollama pull ${model}`;

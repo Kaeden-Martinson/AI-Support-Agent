@@ -16,12 +16,22 @@ export interface TurnInput {
   history: unknown[];
 }
 
+/** One finished exchange as plain text: the message the model saw and the answer the visitor got. */
+export interface TextTurn {
+  user: string;
+  assistant: string;
+}
+
 /** A model that answers questions. Each backend owns the shape of its session history. */
 export interface Backend {
   /** Stream events for one turn and return the session history including it. */
   answer(input: TurnInput): AsyncGenerator<AgentEvent, unknown[]>;
   /** Visitor-facing message for an error thrown by answer(). */
   errorMessage(err: unknown): string;
+  /** History entries for exchanges another backend answered, to append to this backend's history. */
+  textTurns(turns: TextTurn[]): unknown[];
+  /** True when an error from answer() means the model is unavailable, so a backup may take over. */
+  isUnavailable?(err: unknown): boolean;
 }
 
 export const SEARCH_DOCS_DESCRIPTION =
